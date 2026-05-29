@@ -15,7 +15,7 @@ import {
     CheckCircle2
 } from 'lucide-react';
 
-export default function ReceivablesShow({ receivable }) {
+export default function ReceivablesShow({ receivable, bankAccounts = [] }) {
     const user = usePage().props.auth.user;
     const [rejectingPaymentId, setRejectingPaymentId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -176,6 +176,30 @@ export default function ReceivablesShow({ receivable }) {
                         {/* 2. Payments Verification & Upload Form */}
                         <div className="space-y-6">
                             
+                            {/* Informasi Rekening Tujuan (Bila ada) */}
+                            {bankAccounts.length > 0 && (
+                                <div className="glass-card rounded-3xl p-6 space-y-4 bg-gradient-to-br from-indigo-50/50 to-white">
+                                    <h3 className="text-sm font-bold text-slate-800 border-b pb-3 flex items-center gap-2">
+                                        <CreditCard className="w-4 h-4 text-indigo-500" />
+                                        Rekening Tujuan Pembayaran Resmi
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {bankAccounts.map(account => (
+                                            <div key={account.id} className="p-3 bg-white border border-indigo-100 rounded-xl flex justify-between items-center shadow-sm">
+                                                <div>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase">{account.bank_name}</div>
+                                                    <div className="text-sm font-extrabold text-slate-800 tracking-wider">{account.account_number}</div>
+                                                    <div className="text-[10px] text-slate-500 font-semibold mt-0.5">a.n. {account.account_holder}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-2">
+                                        * Harap transfer sesuai nominal tagihan dan simpan bukti transfer Anda.
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Upload Payment Form (for Distributor, if unpaid/partially paid) */}
                             {isDistributor && receivable.remaining_balance > 0 && (
                                 <div className="glass-card rounded-3xl p-6 space-y-4">

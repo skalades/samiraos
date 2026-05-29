@@ -71,9 +71,11 @@ class ReceivableController extends Controller
         }
 
         $receivable->load(['distributor', 'order.items.product', 'payments.verifier']);
+        $bankAccounts = \App\Models\BankAccount::where('is_active', true)->get();
 
         return Inertia::render('Receivables/Show', [
             'receivable' => $receivable,
+            'bankAccounts' => $bankAccounts,
         ]);
     }
 

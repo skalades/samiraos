@@ -169,6 +169,15 @@ export default function AuthenticatedLayout({ header, children }) {
                                         Log Aktivitas
                                     </NavLink>
                                 )}
+
+                                {user.role === 'super_admin' && (
+                                    <NavLink
+                                        href={route('bank-accounts.index')}
+                                        active={route().current('bank-accounts.*')}
+                                    >
+                                        Rekening Bank
+                                    </NavLink>
+                                )}
                             </div>
                         </div>
 
@@ -323,12 +332,20 @@ export default function AuthenticatedLayout({ header, children }) {
                         )}
 
                         {user.role === 'super_admin' && (
-                            <ResponsiveNavLink
-                                href={route('activity-logs.index')}
-                                active={route().current('activity-logs.*')}
-                            >
-                                Log Aktivitas
-                            </ResponsiveNavLink>
+                            <>
+                                <ResponsiveNavLink
+                                    href={route('activity-logs.index')}
+                                    active={route().current('activity-logs.*')}
+                                >
+                                    Log Aktivitas
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('bank-accounts.index')}
+                                    active={route().current('bank-accounts.*')}
+                                >
+                                    Rekening Bank
+                                </ResponsiveNavLink>
+                            </>
                         )}
                     </div>
 

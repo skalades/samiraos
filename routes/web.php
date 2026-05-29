@@ -92,6 +92,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Activity Logs
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+
+        // Rekening Bank (Bank Accounts)
+        Route::resource('bank-accounts', \App\Http\Controllers\BankAccountController::class)->except(['create', 'show', 'edit']);
     });
 });
 
