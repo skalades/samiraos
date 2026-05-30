@@ -1,5 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { ORDER_STATUS, ORDER_STATUS_STEPS } from '@/lib/constants';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import { formatIDR } from '@/lib/formatters';
 import { useState } from 'react';
 import { 
     Package, 
@@ -25,6 +28,8 @@ export default function AgenDashboard({
     announcements, 
     availableProducts 
 }) {
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: 'Konfirmasi', message: '', onConfirm: () => {}, danger: false });
+
     // PO Form
     const { data, setData, post, processing, reset } = useForm({
         items: [], // { product_id, qty }
@@ -34,13 +39,6 @@ export default function AgenDashboard({
 
     const [quantities, setQuantities] = useState({}); // { product_id: qty }
 
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     const handleQtyChange = (productId, newQty, maxAvailable) => {
         const qty = Math.max(0, Math.min(newQty, maxAvailable));
@@ -61,9 +59,15 @@ export default function AgenDashboard({
     };
 
     const handleConfirmDelivery = (orderId) => {
-        if (confirm('Apakah Anda yakin sudah menerima barang pesanan ini? Stok Anda akan bertambah secara otomatis.')) {
-            post(route('orders.deliver', orderId));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Tindakan',
+            message: 'Apakah Anda yakin sudah menerima barang pesanan ini? Stok Anda akan bertambah secara otomatis.',
+            danger: false,
+            onConfirm: () => {
+                post(route('orders.deliver', orderId));
+            }
+        });
     };
 
     const submitPO = (e) => {
@@ -359,17 +363,17 @@ export default function AgenDashboard({
                                                     </td>
                                                     <td className="py-3">
                                                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase
-                                                            ${order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' : 
-                                                              order.status === 'shipped' ? 'bg-blue-100 text-blue-800 animate-pulse' : 
-                                                              order.status === 'approved' || order.status === 'processing' ? 'bg-indigo-100 text-indigo-800' : 
-                                                              order.status === 'rejected' || order.status === 'cancelled' ? 'bg-rose-100 text-rose-800' : 
+                                                            ${order.status === ORDER_STATUS.DELIVERED ? 'bg-emerald-100 text-emerald-800' : 
+                                                              order.status === ORDER_STATUS.SHIPPED ? 'bg-blue-100 text-blue-800 animate-pulse' : 
+                                                              order.status === ORDER_STATUS.APPROVED || order.status === ORDER_STATUS.PROCESSING ? 'bg-indigo-100 text-indigo-800' : 
+                                                              order.status === ORDER_STATUS.REJECTED || order.status === ORDER_STATUS.CANCELLED ? 'bg-rose-100 text-rose-800' : 
                                                               'bg-slate-100 text-slate-800'}`}
                                                         >
                                                             {order.status}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 text-center">
-                                                        {order.status === 'shipped' ? (
+                                                        {order.status === ORDER_STATUS.SHIPPED ? (
                                                             <button
                                                                 onClick={() => handleConfirmDelivery(order.id)}
                                                                 className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition-colors flex items-center gap-1 mx-auto"
@@ -445,6 +449,15 @@ export default function AgenDashboard({
 
                 </div>
             </div>
+        
+            <ConfirmDialog 
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                danger={confirmDialog.danger}
+            />
         </AuthenticatedLayout>
     );
 }

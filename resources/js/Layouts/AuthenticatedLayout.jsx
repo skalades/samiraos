@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
+    const permissions = usePage().props.auth.permissions || {};
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -65,7 +66,7 @@ export default function AuthenticatedLayout({ header, children }) {
         activeChannels.push({ channel: 'announcements.all', inst: allChannel });
 
         // Distributor or SuperAdmin listens to announcements.distributor
-        if (user.role === 'distributor' || user.role === 'super_admin') {
+        if (permissions.view_central_receivables) {
             const distChannel = window.Echo.private('announcements.distributor')
                 .listen('AnnouncementPublished', (e) => {
                     showToast(e);
@@ -74,7 +75,7 @@ export default function AuthenticatedLayout({ header, children }) {
         }
 
         // Agen or SuperAdmin listens to announcements.agen
-        if (user.role === 'agen' || user.role === 'super_admin') {
+        if (! permissions.order_with_credit) { // Agen or Superadmin
             const agenChannel = window.Echo.private('announcements.agen')
                 .listen('AnnouncementPublished', (e) => {
                     showToast(e);
@@ -116,7 +117,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Orders
                                 </NavLink>
 
-                                {(user.role === 'super_admin' || user.role === 'distributor') && (
+                                {permissions.view_central_receivables && (
                                     <NavLink
                                         href={route('receivables.index')}
                                         active={route().current('receivables.*')}
@@ -125,7 +126,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
-                                {(user.role === 'super_admin' || user.role === 'distributor') && (
+                                {permissions.view_central_receivables && (
                                     <NavLink
                                         href={route('stock-opnames.index')}
                                         active={route().current('stock-opnames.*')}
@@ -134,7 +135,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
-                                {user.role === 'super_admin' && (
+                                {permissions.manage_products && (
                                     <NavLink
                                         href={route('products.index')}
                                         active={route().current('products.*')}
@@ -143,7 +144,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
-                                {user.role === 'super_admin' && (
+                                {permissions.view_all_data && (
                                     <NavLink
                                         href={route('territories.index')}
                                         active={route().current('territories.*')}
@@ -152,7 +153,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
-                                {user.role === 'super_admin' && (
+                                {permissions.manage_announcements && (
                                     <NavLink
                                         href={route('announcements.index')}
                                         active={route().current('announcements.*')}
@@ -161,7 +162,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
-                                {user.role === 'super_admin' && (
+                                {permissions.view_all_data && (
                                     <NavLink
                                         href={route('activity-logs.index')}
                                         active={route().current('activity-logs.*')}
@@ -170,7 +171,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </NavLink>
                                 )}
 
-                                {user.role === 'super_admin' && (
+                                {permissions.manage_bank_accounts && (
                                     <NavLink
                                         href={route('bank-accounts.index')}
                                         active={route().current('bank-accounts.*')}
@@ -290,7 +291,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             Orders
                         </ResponsiveNavLink>
 
-                        {(user.role === 'super_admin' || user.role === 'distributor') && (
+                        {permissions.view_central_receivables && (
                             <ResponsiveNavLink
                                 href={route('receivables.index')}
                                 active={route().current('receivables.*')}
@@ -299,7 +300,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </ResponsiveNavLink>
                         )}
 
-                        {(user.role === 'super_admin' || user.role === 'distributor') && (
+                        {permissions.view_central_receivables && (
                             <ResponsiveNavLink
                                 href={route('stock-opnames.index')}
                                 active={route().current('stock-opnames.*')}
@@ -308,7 +309,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </ResponsiveNavLink>
                         )}
 
-                        {user.role === 'super_admin' && (
+                        {permissions.manage_products && (
                             <>
                                 <ResponsiveNavLink
                                     href={route('products.index')}
@@ -331,7 +332,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </>
                         )}
 
-                        {user.role === 'super_admin' && (
+                        {permissions.manage_bank_accounts && (
                             <>
                                 <ResponsiveNavLink
                                     href={route('activity-logs.index')}

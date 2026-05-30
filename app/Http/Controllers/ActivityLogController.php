@@ -20,8 +20,8 @@ class ActivityLogController extends Controller
         $user = $request->user();
         $query = ActivityLog::with('user');
 
-        // Filter berdasarkan role
-        if ($user->role !== UserRole::SuperAdmin) {
+        // Filter berdasarkan scope data
+        if (! $user->can('view-all-data')) {
             $query->where('user_id', $user->id);
         }
 
@@ -47,7 +47,7 @@ class ActivityLogController extends Controller
 
         // Daftar tipe aksi unik untuk filter
         $actionTypes = ActivityLog::when(
-            $user->role !== UserRole::SuperAdmin,
+            ! $user->can('view-all-data'),
             fn($q) => $q->where('user_id', $user->id)
         )->distinct()->pluck('action_type');
 

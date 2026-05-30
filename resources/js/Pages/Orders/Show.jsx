@@ -1,5 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { ORDER_STATUS, ORDER_STATUS_STEPS } from '@/lib/constants';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import { formatIDR } from '@/lib/formatters';
 import { useState } from 'react';
 import { 
     ShoppingBag, 
@@ -19,7 +22,10 @@ import {
 } from 'lucide-react';
 
 export default function OrdersShow({ order }) {
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: 'Konfirmasi', message: '', onConfirm: () => {}, danger: false });
+
     const user = usePage().props.auth.user;
+    const permissions = usePage().props.auth.permissions || {};
     const [rejectingOrder, setRejectingOrder] = useState(false);
     const [rejectingPaymentId, setRejectingPaymentId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -32,30 +38,41 @@ export default function OrdersShow({ order }) {
         reason: ''
     });
 
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     const handleApprove = () => {
-        if (confirm('Apakah Anda yakin ingin menyetujui PO ini? Stok Anda akan dikurangi.')) {
-            postApprove(route('orders.approve', order.id));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Tindakan',
+            message: 'Apakah Anda yakin ingin menyetujui PO ini? Stok Anda akan dikurangi.',
+            danger: false,
+            onConfirm: () => {
+                postApprove(route('orders.approve', order.id));
+            }
+        });
     };
 
     const handleShip = () => {
-        if (confirm('Apakah Anda yakin ingin mengirim barang untuk PO ini?')) {
-            postShip(route('orders.ship', order.id));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Tindakan',
+            message: 'Apakah Anda yakin ingin mengirim barang untuk PO ini?',
+            danger: false,
+            onConfirm: () => {
+                postShip(route('orders.ship', order.id));
+            }
+        });
     };
 
     const handleDeliver = () => {
-        if (confirm('Konfirmasi bahwa Anda sudah menerima barang pesanan Anda secara lengkap?')) {
-            postDeliver(route('orders.deliver', order.id));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Tindakan',
+            message: 'Konfirmasi bahwa Anda sudah menerima barang pesanan Anda secara lengkap?',
+            danger: false,
+            onConfirm: () => {
+                postDeliver(route('orders.deliver', order.id));
+            }
+        });
     };
 
     const handleRejectOrder = (e) => {
@@ -70,9 +87,15 @@ export default function OrdersShow({ order }) {
     };
 
     const handleApprovePayment = (paymentId) => {
-        if (confirm('Setujui pembayaran ini? Saldo kredit distributor akan dikreditkan kembali.')) {
-            postVerifyPayment(route('receivables.payments.approve', paymentId));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Tindakan',
+            message: 'Setujui pembayaran ini? Saldo kredit distributor akan dikreditkan kembali.',
+            danger: false,
+            onConfirm: () => {
+                postVerifyPayment(route('receivables.payments.approve', paymentId));
+            }
+        });
     };
 
     const handleRejectPayment = (e) => {
@@ -87,10 +110,10 @@ export default function OrdersShow({ order }) {
     };
 
     // Determine timeline step index
-    const steps = ['pending', 'approved', 'processing', 'shipped', 'delivered'];
+    const steps = ORDER_STATUS_STEPS;
     const currentStepIndex = steps.indexOf(order.status);
 
-    const isSeller = order.seller_id === user.id || (order.type === 'distributor_to_pusat' && user.role === 'super_admin');
+    const isSeller = order.seller_id === user.id || (order.type === 'distributor_to_pusat' && permissions.view_all_data);
     const isBuyer = order.buyer_id === user.id;
 
     return (
@@ -120,7 +143,7 @@ export default function OrdersShow({ order }) {
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
 
                     {/* STATUS TIMELINE PROGRESS BAR */}
-                    {order.status !== 'rejected' && order.status !== 'cancelled' && (
+                    {order.status !== ORDER_STATUS.REJECTED && order.status !== ORDER_STATUS.CANCELLED && (
                         <div className="glass-card rounded-3xl p-6">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                                 {steps.map((step, idx) => {
@@ -153,11 +176,11 @@ export default function OrdersShow({ order }) {
                     )}
 
                     {/* REJECTED / CANCELLED HERO */}
-                    {(order.status === 'rejected' || order.status === 'cancelled') && (
+                    {(order.status === ORDER_STATUS.REJECTED || order.status === ORDER_STATUS.CANCELLED) && (
                         <div className="bg-rose-50 border border-rose-200 rounded-3xl p-6 flex items-start gap-4">
                             <XCircle className="w-10 h-10 text-rose-600 shrink-0" />
                             <div className="space-y-1">
-                                <h3 className="font-extrabold text-rose-800 text-base">Pesanan Ini {order.status === 'rejected' ? 'Ditolak' : 'Dibatalkan'}</h3>
+                                <h3 className="font-extrabold text-rose-800 text-base">Pesanan Ini {order.status === ORDER_STATUS.REJECTED ? 'Ditolak' : 'Dibatalkan'}</h3>
                                 <p className="text-sm text-rose-700 leading-relaxed">
                                     Status PO saat ini tidak aktif. 
                                     {order.notes && ` Catatan Penolakan: "${order.notes}"`}
@@ -261,13 +284,13 @@ export default function OrdersShow({ order }) {
                         <div className="space-y-6">
                             
                             {/* Workflow Actions */}
-                            {order.status !== 'rejected' && order.status !== 'cancelled' && (
+                            {order.status !== ORDER_STATUS.REJECTED && order.status !== ORDER_STATUS.CANCELLED && (
                                 <div className="glass-card rounded-3xl p-6 space-y-4">
                                     <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Tindakan Persetujuan</h3>
                                     
                                     <div className="space-y-2">
                                         {/* Seller Verification Action (Approve / Reject) */}
-                                        {isSeller && order.status === 'pending' && (
+                                        {isSeller && order.status === ORDER_STATUS.PENDING && (
                                             <>
                                                 <button
                                                     onClick={handleApprove}
@@ -288,7 +311,7 @@ export default function OrdersShow({ order }) {
                                         )}
 
                                         {/* Shipping Action for Pusat */}
-                                        {user.role === 'super_admin' && order.type === 'distributor_to_pusat' && order.status === 'approved' && (
+                                        {permissions.view_all_data && order.type === 'distributor_to_pusat' && order.status === ORDER_STATUS.APPROVED && (
                                             <button
                                                 onClick={handleShip}
                                                 disabled={shipProcessing}
@@ -300,7 +323,7 @@ export default function OrdersShow({ order }) {
                                         )}
 
                                         {/* Print Label Action (For Sellers) */}
-                                        {isSeller && ['approved', 'processing', 'shipped', 'delivered'].includes(order.status) && (
+                                        {isSeller && ORDER_STATUS_STEPS.slice(1).includes(order.status) && (
                                             <a
                                                 href={route('orders.print-label', order.id)}
                                                 target="_blank"
@@ -313,7 +336,7 @@ export default function OrdersShow({ order }) {
                                         )}
 
                                         {/* Delivery/Received Confirmation for Buyer */}
-                                        {isBuyer && order.status === 'shipped' && (
+                                        {isBuyer && order.status === ORDER_STATUS.SHIPPED && (
                                             <button
                                                 onClick={handleDeliver}
                                                 disabled={deliverProcessing}
@@ -325,9 +348,9 @@ export default function OrdersShow({ order }) {
                                         )}
 
                                         {/* Default placeholder if no action */}
-                                        {!(isSeller && order.status === 'pending') &&
-                                         !(user.role === 'super_admin' && order.type === 'distributor_to_pusat' && order.status === 'approved') &&
-                                         !(isBuyer && order.status === 'shipped') && (
+                                        {!(isSeller && order.status === ORDER_STATUS.PENDING) &&
+                                         !(permissions.view_all_data && order.type === 'distributor_to_pusat' && order.status === ORDER_STATUS.APPROVED) &&
+                                         !(isBuyer && order.status === ORDER_STATUS.SHIPPED) && (
                                             <p className="text-xs text-slate-400 text-center py-4">Tidak ada tindakan persetujuan yang tertunda untuk status ini.</p>
                                         )}
                                     </div>
@@ -398,7 +421,7 @@ export default function OrdersShow({ order }) {
                                                     )}
 
                                                     {/* Admin Approval of Payment Proof */}
-                                                    {user.role === 'super_admin' && payment.status === 'pending_verification' && (
+                                                    {permissions.approve_receivable_payments && payment.status === 'pending_verification' && (
                                                         <div className="flex gap-2 pt-2">
                                                             <button
                                                                 onClick={() => handleApprovePayment(payment.id)}
@@ -534,6 +557,15 @@ export default function OrdersShow({ order }) {
                 </div>
             )}
 
+        
+            <ConfirmDialog 
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                danger={confirmDialog.danger}
+            />
         </AuthenticatedLayout>
     );
 }

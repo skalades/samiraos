@@ -49,22 +49,11 @@ class CentralReceivable extends Model
     }
 
     /**
-     * Generate nomor invoice unik: INV-YYYYMMDD-XXXXX
+     * Generate nomor invoice unik berurutan: INV/YYYY/MM/XXXX
      */
     public static function generateInvoiceNumber(): string
     {
-        $date = now()->format('Ymd');
-        $random = str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
-
-        $invoiceNumber = "INV-{$date}-{$random}";
-
-        // Pastikan unique, retry jika collision
-        while (static::where('invoice_number', $invoiceNumber)->exists()) {
-            $random = str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
-            $invoiceNumber = "INV-{$date}-{$random}";
-        }
-
-        return $invoiceNumber;
+        return \App\Services\SequenceService::generate('INV');
     }
 
     // ─── Relationships ────────────────────────────────────────

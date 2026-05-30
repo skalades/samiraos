@@ -65,7 +65,7 @@ class TerritoryController extends Controller
 
         $this->auditService->log(
             user: $request->user(),
-            actionType: 'UPDATE_TERRITORY',
+            actionType: \App\Enums\AuditAction::UpdateTerritory,
             description: "Mengubah data wilayah: {$territory->name}",
             entity: $territory,
             oldValues: $oldValues,

@@ -1,5 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import { formatIDR } from '@/lib/formatters';
 import { useState } from 'react';
 import { 
     Package, 
@@ -26,6 +28,8 @@ export default function DistributorDashboard({
     recentLogs, 
     announcements 
 }) {
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: 'Konfirmasi', message: '', onConfirm: () => {}, danger: false });
+
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [rejectingOrder, setRejectingOrder] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -47,13 +51,6 @@ export default function DistributorDashboard({
     // Approve Form
     const { post: postApprove, processing: approveProcessing } = useForm();
 
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     const handleOpenPaymentModal = (invoice) => {
         setSelectedInvoice(invoice);
@@ -81,9 +78,15 @@ export default function DistributorDashboard({
     };
 
     const handleApproveOrder = (orderId) => {
-        if (confirm('Apakah Anda yakin ingin menyetujui pesanan ini? Stok gudang regional Anda akan dikurangi.')) {
-            postApprove(route('orders.approve', orderId));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Tindakan',
+            message: 'Apakah Anda yakin ingin menyetujui pesanan ini? Stok gudang regional Anda akan dikurangi.',
+            danger: false,
+            onConfirm: () => {
+                postApprove(route('orders.approve', orderId));
+            }
+        });
     };
 
     const handleRejectOrder = (e) => {
@@ -620,6 +623,15 @@ export default function DistributorDashboard({
                 </div>
             )}
 
+        
+            <ConfirmDialog 
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                danger={confirmDialog.danger}
+            />
         </AuthenticatedLayout>
     );
 }

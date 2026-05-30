@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { USER_ROLES } from '@/constants';
+import ConfirmDialog from '@/Components/ConfirmDialog';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { 
@@ -13,10 +16,18 @@ import {
 } from 'lucide-react';
 
 export default function AnnouncementsIndex({ announcements }) {
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: 'Konfirmasi', message: '', onConfirm: () => {}, danger: false });
+
     const handleDelete = (id, title) => {
-        if (confirm(`Apakah Anda yakin ingin menonaktifkan/menghapus pengumuman "${title}"?`)) {
-            router.delete(route('announcements.destroy', id));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Hapus',
+            message: `Apakah Anda yakin ingin menonaktifkan/menghapus pengumuman "${title}"?`,
+            danger: true,
+            onConfirm: () => {
+                router.delete(route('announcements.destroy', id));
+            }
+        });
     };
 
     const formatDate = (dateString) => {
@@ -46,9 +57,9 @@ export default function AnnouncementsIndex({ announcements }) {
         switch (role) {
             case 'all':
                 return 'Semua Jaringan';
-            case 'distributor':
+            case USER_ROLES.DISTRIBUTOR:
                 return 'Distributor Saja';
-            case 'agen':
+            case USER_ROLES.AGEN:
                 return 'Agen Saja';
             default:
                 return role;
@@ -233,6 +244,15 @@ export default function AnnouncementsIndex({ announcements }) {
 
                 </div>
             </div>
+        
+            <ConfirmDialog 
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                danger={confirmDialog.danger}
+            />
         </AuthenticatedLayout>
     );
 }

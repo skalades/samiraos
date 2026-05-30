@@ -1,5 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import { formatIDR } from '@/lib/formatters';
 import { useState } from 'react';
 import { 
     FileText, 
@@ -16,7 +18,10 @@ import {
 } from 'lucide-react';
 
 export default function ReceivablesShow({ receivable, bankAccounts = [] }) {
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: 'Konfirmasi', message: '', onConfirm: () => {}, danger: false });
+
     const user = usePage().props.auth.user;
+    const permissions = usePage().props.auth.permissions || {};
     const [rejectingPaymentId, setRejectingPaymentId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
 
@@ -34,13 +39,6 @@ export default function ReceivablesShow({ receivable, bankAccounts = [] }) {
         reason: ''
     });
 
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     const handleOpenPaymentUpload = () => {
         resetPay();
@@ -52,9 +50,15 @@ export default function ReceivablesShow({ receivable, bankAccounts = [] }) {
     };
 
     const handleApprovePayment = (paymentId) => {
-        if (confirm('Apakah Anda yakin ingin menyetujui setoran pembayaran ini? Saldo kredit distributor akan bertambah.')) {
-            postVerify(route('receivables.payments.approve', paymentId));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Tindakan',
+            message: 'Apakah Anda yakin ingin menyetujui setoran pembayaran ini? Saldo kredit distributor akan bertambah.',
+            danger: false,
+            onConfirm: () => {
+                postVerify(route('receivables.payments.approve', paymentId));
+            }
+        });
     };
 
     const handleRejectPayment = (e) => {
@@ -68,8 +72,8 @@ export default function ReceivablesShow({ receivable, bankAccounts = [] }) {
         });
     };
 
-    const isDistributor = user.role === 'distributor';
-    const isAdmin = user.role === 'super_admin';
+    const isDistributor = !permissions.view_all_data && permissions.view_central_receivables;
+    const isAdmin = permissions.approve_receivable_payments;
 
     return (
         <AuthenticatedLayout
@@ -398,6 +402,15 @@ export default function ReceivablesShow({ receivable, bankAccounts = [] }) {
                 </div>
             )}
 
+        
+            <ConfirmDialog 
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                danger={confirmDialog.danger}
+            />
         </AuthenticatedLayout>
     );
 }

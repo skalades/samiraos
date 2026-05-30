@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { formatIDR } from '@/lib/formatters';
 import { useState } from 'react';
 import { 
     ShoppingBag, 
@@ -20,13 +21,6 @@ export default function OrdersCreate({ products, creditInfo, canUseCredit }) {
         notes: ''
     });
 
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     const handleQtyChange = (productId, newQty) => {
         const qty = Math.max(0, newQty);

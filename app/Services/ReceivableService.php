@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\Services\ReceivableServiceInterface;
 use App\Enums\PaymentVerificationStatus;
 use App\Enums\ReceivableStatus;
 use App\Models\CentralReceivable;
@@ -11,7 +12,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-class ReceivableService
+class ReceivableService implements ReceivableServiceInterface
 {
     public function __construct(
         private readonly AuditService $auditService,
@@ -40,7 +41,7 @@ class ReceivableService
 
             $this->auditService->log(
                 user: $order->buyer,
-                actionType: 'receivable_created',
+                actionType: \App\Enums\AuditAction::CreateReceivable,
                 description: "Piutang {$receivable->invoice_number} dibuat untuk order {$order->order_number}",
                 entity: $receivable,
                 newValues: $receivable->toArray()
@@ -82,7 +83,7 @@ class ReceivableService
 
             $this->auditService->log(
                 user: $receivable->distributor,
-                actionType: 'payment_submitted',
+                actionType: \App\Enums\AuditAction::SubmitPayment,
                 description: "Pembayaran Rp " . number_format($data['amount'], 0, ',', '.') .
                     " disubmit untuk piutang {$receivable->invoice_number}",
                 entity: $payment,
@@ -153,7 +154,7 @@ class ReceivableService
 
             $this->auditService->log(
                 user: $admin,
-                actionType: 'payment_approved',
+                actionType: \App\Enums\AuditAction::ApprovePayment,
                 description: "Pembayaran Rp " . number_format($payment->amount, 0, ',', '.') .
                     " disetujui untuk piutang {$receivable->invoice_number}",
                 entity: $payment,
@@ -191,7 +192,7 @@ class ReceivableService
 
             $this->auditService->log(
                 user: $admin,
-                actionType: 'payment_rejected',
+                actionType: \App\Enums\AuditAction::RejectPayment,
                 description: "Pembayaran ditolak untuk piutang {$payment->receivable->invoice_number}: {$reason}",
                 entity: $payment,
                 oldValues: $oldValues,
@@ -223,7 +224,7 @@ class ReceivableService
 
                 $this->auditService->log(
                     user: $receivable->distributor,
-                    actionType: 'receivable_overdue',
+                    actionType: \App\Enums\AuditAction::MarkAsOverdue,
                     description: "Piutang {$receivable->invoice_number} jatuh tempo",
                     entity: $receivable,
                     oldValues: $oldValues,

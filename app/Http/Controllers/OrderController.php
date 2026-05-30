@@ -6,9 +6,12 @@ use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentType;
 use App\Enums\UserRole;
+use App\Http\Requests\StoreOrderRequest;
 use App\Models\Order;
 use App\Models\Product;
-use App\Services\OrderService;
+use App\Services\OrderCreationService;
+use App\Services\OrderApprovalService;
+use App\Services\OrderFulfillmentService;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +21,9 @@ use Inertia\Response;
 class OrderController extends Controller
 {
     public function __construct(
-        private readonly OrderService $orderService,
+        private readonly OrderCreationService $orderCreationService,
+        private readonly OrderApprovalService $orderApprovalService,
+        private readonly OrderFulfillmentService $orderFulfillmentService,
         private readonly AuditService $auditService,
     ) {}
 
@@ -30,14 +35,12 @@ class OrderController extends Controller
         $user = $request->user();
         $query = Order::with(['buyer', 'seller', 'items.product']);
 
-        // Filter berdasarkan role
-        if ($user->role === UserRole::Distributor) {
+        // Filter berdasarkan scope data
+        if (! $user->can('view-all-data')) {
             $query->where(function ($q) use ($user) {
                 $q->where('buyer_id', $user->id)
                     ->orWhere('seller_id', $user->id);
             });
-        } elseif ($user->role === UserRole::Agen) {
-            $query->where('buyer_id', $user->id);
         }
 
         // Filter status
@@ -88,50 +91,30 @@ class OrderController extends Controller
                 ];
             });
 
-        // Info credit limit (untuk distributor)
         $creditInfo = null;
-        if ($user->role === UserRole::Distributor) {
-            $binding = $user->networkBinding;
-            $creditInfo = [
-                'credit_limit' => $binding?->credit_limit ?? 0,
-                'credit_used' => $binding?->credit_used ?? 0,
-                'credit_remaining' => ($binding?->credit_limit ?? 0) - ($binding?->credit_used ?? 0),
-            ];
+        if ($user->can('order-with-credit')) {
+            $creditInfo = $user->getCreditInfo();
         }
 
         return Inertia::render('Orders/Create', [
             'products' => $products,
             'creditInfo' => $creditInfo,
-            'canUseCredit' => $user->role === UserRole::Distributor,
+            'canUseCredit' => $user->can('order-with-credit'),
         ]);
     }
 
     /**
      * Simpan PO baru.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreOrderRequest $request): RedirectResponse
     {
-        $request->validate([
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.qty' => 'required|integer|min:1',
-            'payment_type' => 'required|in:cash,tempo',
-            'notes' => 'nullable|string|max:500',
-        ]);
 
         try {
-            $order = $this->orderService->createOrder(
+            $order = $this->orderCreationService->createOrder(
                 buyer: $request->user(),
                 items: $request->items,
                 paymentType: PaymentType::from($request->payment_type),
                 notes: $request->notes,
-            );
-
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'CREATE_PO',
-                description: "Membuat PO #{$order->order_number} senilai Rp " . number_format($order->total, 0, ',', '.'),
-                entity: $order,
             );
 
             return redirect()->route('orders.show', $order)
@@ -161,14 +144,7 @@ class OrderController extends Controller
     public function approve(Request $request, Order $order): RedirectResponse
     {
         try {
-            $this->orderService->approveOrder($order, $request->user());
-
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'APPROVE_PO',
-                description: "Menyetujui PO #{$order->order_number}",
-                entity: $order,
-            );
+            $this->orderApprovalService->approveOrder($order, $request->user());
 
             return back()->with('success', 'PO berhasil disetujui.');
         } catch (\Exception $e) {
@@ -184,14 +160,7 @@ class OrderController extends Controller
         $request->validate(['reason' => 'required|string|max:500']);
 
         try {
-            $this->orderService->rejectOrder($order, $request->user(), $request->reason);
-
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'REJECT_PO',
-                description: "Menolak PO #{$order->order_number}: {$request->reason}",
-                entity: $order,
-            );
+            $this->orderApprovalService->rejectOrder($order, $request->user(), $request->reason);
 
             return back()->with('success', 'PO ditolak.');
         } catch (\Exception $e) {
@@ -205,14 +174,7 @@ class OrderController extends Controller
     public function ship(Request $request, Order $order): RedirectResponse
     {
         try {
-            $this->orderService->shipOrder($order);
-
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'SHIP_PO',
-                description: "Mengirim PO #{$order->order_number}",
-                entity: $order,
-            );
+            $this->orderFulfillmentService->shipOrder($order);
 
             return back()->with('success', 'PO ditandai sebagai dikirim.');
         } catch (\Exception $e) {
@@ -226,14 +188,7 @@ class OrderController extends Controller
     public function deliver(Request $request, Order $order): RedirectResponse
     {
         try {
-            $this->orderService->deliverOrder($order);
-
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'DELIVER_PO',
-                description: "Konfirmasi terima PO #{$order->order_number}",
-                entity: $order,
-            );
+            $this->orderFulfillmentService->deliverOrder($order);
 
             return back()->with('success', 'Barang dikonfirmasi diterima.');
         } catch (\Exception $e) {
@@ -259,7 +214,7 @@ class OrderController extends Controller
      */
     private function authorizeOrderAccess(mixed $user, Order $order): void
     {
-        if ($user->role === UserRole::SuperAdmin) {
+        if ($user->can('view-all-data')) {
             return;
         }
 

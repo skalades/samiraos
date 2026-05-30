@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AuditAction;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ class AuditService
      * Catat aktivitas user ke activity_logs.
      *
      * @param  User        $user       User yang melakukan aksi
-     * @param  string      $actionType Tipe aksi (e.g. 'order_created', 'stock_added')
+     * @param  AuditAction $actionType Tipe aksi (e.g. 'order_created', 'stock_added')
      * @param  string      $description Deskripsi aksi
      * @param  Model|null  $entity     Entity yang terkait (polymorphic)
      * @param  array|null  $oldValues  Nilai lama sebelum perubahan
@@ -22,7 +23,7 @@ class AuditService
      */
     public function log(
         User $user,
-        string $actionType,
+        AuditAction $actionType,
         string $description,
         ?Model $entity = null,
         ?array $oldValues = null,
@@ -30,7 +31,7 @@ class AuditService
     ): ActivityLog {
         return ActivityLog::create([
             'user_id' => $user->id,
-            'action_type' => $actionType,
+            'action_type' => $actionType->value,
             'entity_type' => $entity ? get_class($entity) : null,
             'entity_id' => $entity?->getKey(),
             'description' => $description,

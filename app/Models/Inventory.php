@@ -67,4 +67,18 @@ class Inventory extends Model
 
         return round(($this->qty / $maxCapacity) * 100, 2);
     }
+
+    /**
+     * Format untuk frontend presentation.
+     */
+    public function toPresentation(): array
+    {
+        return [
+            'id' => $this->id,
+            'product' => $this->product?->only('id', 'name', 'sku', 'image'),
+            'qty' => $this->qty,
+            'low_stock_threshold' => $this->low_stock_threshold,
+            'is_low_stock' => $this->isLowStock(),
+        ];
+    }
 }

@@ -1,7 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { 
+import { formatIDR } from '@/lib/formatters';
+
+import { ORDER_STATUS, ORDER_STATUS_STEPS } from '@/lib/constants';
+
+import {
     ShoppingBag, 
     Search, 
     Eye, 
@@ -26,13 +30,6 @@ export default function OrdersIndex({ orders, filters }) {
         router.get(route('orders.index'), { search, status: newStatus }, { preserveState: true });
     };
 
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     const statusTabs = [
         { key: 'all', label: 'Semua' },
@@ -158,10 +155,10 @@ export default function OrdersIndex({ orders, filters }) {
                                                 </td>
                                                 <td className="py-4">
                                                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase
-                                                        ${order.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' : 
-                                                          order.status === 'shipped' ? 'bg-blue-100 text-blue-800 animate-pulse' : 
-                                                          order.status === 'approved' || order.status === 'processing' ? 'bg-indigo-100 text-indigo-800' : 
-                                                          order.status === 'rejected' || order.status === 'cancelled' ? 'bg-rose-100 text-rose-800' : 
+                                                        ${order.status === ORDER_STATUS.DELIVERED ? 'bg-emerald-100 text-emerald-800' : 
+                                                          order.status === ORDER_STATUS.SHIPPED ? 'bg-blue-100 text-blue-800 animate-pulse' : 
+                                                          order.status === ORDER_STATUS.APPROVED || order.status === ORDER_STATUS.PROCESSING ? 'bg-indigo-100 text-indigo-800' : 
+                                                          order.status === ORDER_STATUS.REJECTED || order.status === ORDER_STATUS.CANCELLED ? 'bg-rose-100 text-rose-800' : 
                                                           'bg-slate-100 text-slate-800'}`}
                                                     >
                                                         {order.status}

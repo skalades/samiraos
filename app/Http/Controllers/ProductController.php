@@ -11,6 +11,8 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Str;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
 
 class ProductController extends Controller
 {
@@ -51,19 +53,8 @@ class ProductController extends Controller
     /**
      * Simpan produk baru.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreProductRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:150|unique:products',
-            'sku' => 'required|string|max:50|unique:products',
-            'description' => 'nullable|string|max:1000',
-            'unit' => 'required|string|max:20',
-            'weight_grams' => 'nullable|integer|min:1',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'price_pusat' => 'required|numeric|min:0',
-            'price_distributor' => 'required|numeric|min:0',
-            'price_agen' => 'required|numeric|min:0',
-        ]);
 
         $imagePath = null;
         if ($request->hasFile('image')) {
@@ -92,7 +83,7 @@ class ProductController extends Controller
 
         $this->auditService->log(
             user: $request->user(),
-            actionType: 'CREATE_PRODUCT',
+            actionType: \App\Enums\AuditAction::CreateProduct,
             description: "Menambahkan produk baru: {$product->name} (SKU: {$product->sku})",
             entity: $product,
         );
@@ -116,20 +107,8 @@ class ProductController extends Controller
     /**
      * Update produk.
      */
-    public function update(Request $request, Product $product): RedirectResponse
+    public function update(UpdateProductRequest $request, Product $product): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:150|unique:products,name,' . $product->id,
-            'sku' => 'required|string|max:50|unique:products,sku,' . $product->id,
-            'description' => 'nullable|string|max:1000',
-            'unit' => 'required|string|max:20',
-            'weight_grams' => 'nullable|integer|min:1',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'price_pusat' => 'required|numeric|min:0',
-            'price_distributor' => 'required|numeric|min:0',
-            'price_agen' => 'required|numeric|min:0',
-            'is_active' => 'boolean',
-        ]);
 
         $oldValues = $product->toArray();
 
@@ -157,7 +136,7 @@ class ProductController extends Controller
 
         $this->auditService->log(
             user: $request->user(),
-            actionType: 'UPDATE_PRODUCT',
+            actionType: \App\Enums\AuditAction::UpdateProduct,
             description: "Mengubah data produk: {$product->name}",
             entity: $product,
             oldValues: $oldValues,
@@ -175,7 +154,7 @@ class ProductController extends Controller
     {
         $this->auditService->log(
             user: $request->user(),
-            actionType: 'DELETE_PRODUCT',
+            actionType: \App\Enums\AuditAction::DeleteProduct,
             description: "Menghapus produk: {$product->name} (SKU: {$product->sku})",
             entity: $product,
         );

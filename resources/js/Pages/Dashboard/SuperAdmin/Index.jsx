@@ -16,19 +16,14 @@ import {
 } from 'lucide-react';
 import L from 'leaflet';
 
+import { formatIDR } from '@/lib/formatters';
+
 export default function SuperAdminDashboard({ stats, territories, recentAnnouncements, recentLogs }) {
     const mapRef = useRef(null);
     const mapInstance = useRef(null);
     const [selectedTerritory, setSelectedTerritory] = useState(null);
 
     // Format currency to IDR
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     useEffect(() => {
         if (!mapRef.current) return;

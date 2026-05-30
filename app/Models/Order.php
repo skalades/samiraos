@@ -61,22 +61,11 @@ class Order extends Model
     }
 
     /**
-     * Generate nomor order unik: PO-YYYYMMDD-XXXXX
+     * Generate nomor order unik berurutan: PO/YYYY/MM/XXXX
      */
     public static function generateOrderNumber(): string
     {
-        $date = now()->format('Ymd');
-        $random = str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
-
-        $orderNumber = "PO-{$date}-{$random}";
-
-        // Pastikan unique, retry jika collision
-        while (static::where('order_number', $orderNumber)->exists()) {
-            $random = str_pad((string) random_int(0, 99999), 5, '0', STR_PAD_LEFT);
-            $orderNumber = "PO-{$date}-{$random}";
-        }
-
-        return $orderNumber;
+        return \App\Services\SequenceService::generate('PO');
     }
 
     // ─── Relationships ────────────────────────────────────────

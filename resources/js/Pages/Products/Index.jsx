@@ -1,5 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import { formatIDR } from '@/lib/formatters';
 import { useState } from 'react';
 import { 
     Package, 
@@ -13,6 +15,8 @@ import {
 } from 'lucide-react';
 
 export default function ProductsIndex({ products, filters }) {
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: 'Konfirmasi', message: '', onConfirm: () => {}, danger: false });
+
     const [search, setSearch] = useState(filters.search || '');
 
     const handleSearch = (e) => {
@@ -21,18 +25,17 @@ export default function ProductsIndex({ products, filters }) {
     };
 
     const handleDelete = (id, name) => {
-        if (confirm(`Apakah Anda yakin ingin menghapus produk "${name}"? Tindakan ini menggunakan Soft Delete.`)) {
-            router.delete(route('products.destroy', id));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Hapus',
+            message: `Apakah Anda yakin ingin menghapus produk "${name}"? Tindakan ini menggunakan Soft Delete.`,
+            danger: true,
+            onConfirm: () => {
+                router.delete(route('products.destroy', id));
+            }
+        });
     };
 
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     return (
         <AuthenticatedLayout
@@ -192,6 +195,15 @@ export default function ProductsIndex({ products, filters }) {
 
                 </div>
             </div>
+        
+            <ConfirmDialog 
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                danger={confirmDialog.danger}
+            />
         </AuthenticatedLayout>
     );
 }

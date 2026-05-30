@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\StoreAnnouncementRequest;
+use Illuminate\Support\Facades\Gate;
 
 class AnnouncementController extends Controller
 {
@@ -38,6 +40,8 @@ class AnnouncementController extends Controller
      */
     public function create(): Response
     {
+        Gate::authorize('manage-announcements');
+        
         return Inertia::render('Announcements/Create', [
             'types' => collect(AnnouncementType::cases())->map(fn($t) => ['value' => $t->value, 'label' => ucfirst($t->value)]),
             'targetRoles' => collect(TargetRole::cases())->map(fn($r) => ['value' => $r->value, 'label' => ucfirst($r->value)]),
@@ -47,16 +51,9 @@ class AnnouncementController extends Controller
     /**
      * Simpan & broadcast pengumuman.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreAnnouncementRequest $request): RedirectResponse
     {
-        $request->validate([
-            'title' => 'required|string|max:200',
-            'body' => 'required|string|max:5000',
-            'type' => 'required|in:info,warning,promo,urgent',
-            'target_role' => 'required|in:all,distributor,agen',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'expires_at' => 'nullable|date|after:now',
-        ]);
+        Gate::authorize('manage-announcements');
 
         try {
             $attachmentPath = null;
@@ -73,12 +70,6 @@ class AnnouncementController extends Controller
                 'expires_at' => $request->expires_at,
             ], $request->user());
 
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'CREATE_ANNOUNCEMENT',
-                description: "Membuat pengumuman: {$announcement->title} (target: {$request->target_role})",
-                entity: $announcement,
-            );
 
             return redirect()->route('announcements.index')
                 ->with('success', 'Pengumuman berhasil dipublikasikan.');
@@ -92,9 +83,11 @@ class AnnouncementController extends Controller
      */
     public function destroy(Request $request, Announcement $announcement): RedirectResponse
     {
+        Gate::authorize('manage-announcements');
+
         $this->auditService->log(
             user: $request->user(),
-            actionType: 'DELETE_ANNOUNCEMENT',
+            actionType: \App\Enums\AuditAction::DeleteAnnouncement,
             description: "Menghapus pengumuman: {$announcement->title}",
             entity: $announcement,
         );

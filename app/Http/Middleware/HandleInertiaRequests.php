@@ -40,6 +40,16 @@ class HandleInertiaRequests extends Middleware
                     'avatar' => $request->user()->avatar,
                     'phone' => $request->user()->phone,
                 ] : null,
+                'permissions' => $request->user() ? [
+                    'manage_users' => $request->user()->can('manage-users'),
+                    'manage_products' => $request->user()->can('manage-products'),
+                    'manage_announcements' => $request->user()->can('manage-announcements'),
+                    'manage_bank_accounts' => $request->user()->can('manage-bank-accounts'),
+                    'view_all_data' => $request->user()->can('view-all-data'),
+                    'view_central_receivables' => $request->user()->can('view-central-receivables'),
+                    'approve_receivable_payments' => $request->user()->can('approve-receivable-payments'),
+                    'order_with_credit' => $request->user()->can('order-with-credit'),
+                ] : [],
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

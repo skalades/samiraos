@@ -180,4 +180,16 @@ class User extends Authenticatable
     {
         return $this->getCreditLimit() - $this->getCreditUsed();
     }
+
+    /**
+     * Ambil informasi credit lengkap sebagai array.
+     */
+    public function getCreditInfo(): array
+    {
+        return [
+            'credit_limit' => $this->getCreditLimit(),
+            'credit_used' => $this->getCreditUsed(),
+            'credit_remaining' => $this->getCreditRemaining(),
+        ];
+    }
 }

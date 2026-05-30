@@ -25,7 +25,7 @@ class StockOpnameController extends Controller
         $user = $request->user();
         $query = StockOpname::with(['product', 'user']);
 
-        if ($user->role !== UserRole::SuperAdmin) {
+        if (! $user->can('view-all-data')) {
             $query->where('user_id', $user->id);
         }
 
@@ -77,7 +77,7 @@ class StockOpnameController extends Controller
 
             $this->auditService->log(
                 user: $user,
-                actionType: 'STOCK_OPNAME',
+                actionType: \App\Enums\AuditAction::StockOpname,
                 description: "Melakukan {$request->type} pada produk ID {$request->product_id}. Stok disesuaikan: {$difference}",
                 entity: clone $inventory,
             );

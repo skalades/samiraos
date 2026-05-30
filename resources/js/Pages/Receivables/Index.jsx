@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { formatIDR } from '@/lib/formatters';
 import { 
     FileText, 
     Search, 
@@ -20,13 +21,6 @@ export default function ReceivablesIndex({ receivables, summary, filters }) {
         router.get(route('receivables.index'), { status: newStatus }, { preserveState: true });
     };
 
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     const statusTabs = [
         { key: 'all', label: 'Semua' },

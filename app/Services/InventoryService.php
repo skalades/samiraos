@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\Services\InventoryServiceInterface;
 use App\Enums\StockOpnameType;
 use App\Models\Inventory;
 use App\Models\StockOpname;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-class InventoryService
+class InventoryService implements InventoryServiceInterface
 {
     public function __construct(
         private readonly AuditService $auditService,
@@ -47,7 +48,7 @@ class InventoryService
 
             $this->auditService->log(
                 user: $user,
-                actionType: 'stock_added',
+                actionType: \App\Enums\AuditAction::AddStock,
                 description: "{$reason} (+{$qty})",
                 entity: $inventory,
                 oldValues: ['qty' => $oldQty],
@@ -97,7 +98,7 @@ class InventoryService
 
             $this->auditService->log(
                 user: $user,
-                actionType: 'stock_deducted',
+                actionType: \App\Enums\AuditAction::DeductStock,
                 description: "{$reason} (-{$qty})",
                 entity: $inventory,
                 oldValues: ['qty' => $oldQty],
@@ -185,7 +186,7 @@ class InventoryService
 
             $this->auditService->log(
                 user: $user,
-                actionType: 'stock_opname',
+                actionType: \App\Enums\AuditAction::StockOpname,
                 description: "Stock opname: sistem={$systemQty}, aktual={$actualQty}, selisih={$difference}. {$reason}",
                 entity: $opname,
                 oldValues: ['qty' => $systemQty],

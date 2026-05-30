@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\SubmitPaymentRequest;
+use Illuminate\Support\Facades\Gate;
 
 class ReceivableController extends Controller
 {
@@ -28,7 +30,9 @@ class ReceivableController extends Controller
         $user = $request->user();
         $query = CentralReceivable::with(['distributor', 'order', 'payments']);
 
-        if ($user->role === UserRole::Distributor) {
+        Gate::authorize('view-central-receivables');
+
+        if (! $user->can('view-all-data')) {
             $query->where('distributor_id', $user->id);
         }
 
@@ -41,12 +45,12 @@ class ReceivableController extends Controller
         // Ringkasan
         $summary = [
             'total_unpaid' => CentralReceivable::when(
-                $user->role === UserRole::Distributor,
+                ! $user->can('view-all-data'),
                 fn($q) => $q->where('distributor_id', $user->id)
             )->whereIn('status', [ReceivableStatus::Unpaid, ReceivableStatus::PartiallyPaid])
                 ->sum('remaining_balance'),
             'total_overdue' => CentralReceivable::when(
-                $user->role === UserRole::Distributor,
+                ! $user->can('view-all-data'),
                 fn($q) => $q->where('distributor_id', $user->id)
             )->where('status', ReceivableStatus::Overdue)
                 ->count(),
@@ -66,7 +70,9 @@ class ReceivableController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role === UserRole::Distributor && $receivable->distributor_id !== $user->id) {
+        Gate::authorize('view-central-receivables');
+
+        if (! $user->can('view-all-data') && $receivable->distributor_id !== $user->id) {
             abort(403);
         }
 
@@ -82,23 +88,15 @@ class ReceivableController extends Controller
     /**
      * Submit pembayaran cicilan (Distributor).
      */
-    public function submitPayment(Request $request, CentralReceivable $receivable): RedirectResponse
+    public function submitPayment(SubmitPaymentRequest $request, CentralReceivable $receivable): RedirectResponse
     {
-        if ($request->user()->role !== UserRole::Distributor) {
-            abort(403);
+        if ($request->user()->can('view-all-data')) {
+            abort(403); // SuperAdmin cannot submit payment
         }
 
         if ($receivable->distributor_id !== $request->user()->id) {
             abort(403);
         }
-
-        $request->validate([
-            'amount' => 'required|numeric|min:1000|max:' . $receivable->remaining_balance,
-            'payment_proof' => 'required|image|mimes:jpg,jpeg,png|max:5120',
-            'bank_name' => 'nullable|string|max:100',
-            'account_number' => 'nullable|string|max:50',
-            'transfer_date' => 'required|date',
-        ]);
 
         try {
             // Upload bukti transfer
@@ -112,13 +110,6 @@ class ReceivableController extends Controller
                 'transfer_date' => $request->transfer_date,
             ]);
 
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'SUBMIT_PAYMENT',
-                description: "Mengunggah bukti transfer untuk faktur #{$receivable->invoice_number} sebesar Rp " . number_format($request->amount, 0, ',', '.'),
-                entity: $payment,
-            );
-
             return back()->with('success', 'Bukti pembayaran berhasil diunggah. Menunggu verifikasi Admin Pusat.');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
@@ -130,21 +121,12 @@ class ReceivableController extends Controller
      */
     public function approvePayment(Request $request, ReceivablePayment $payment): RedirectResponse
     {
-        if ($request->user()->role !== UserRole::SuperAdmin) {
-            abort(403);
-        }
+        Gate::authorize('approve-receivable-payments');
 
         try {
             $this->receivableService->approvePayment($payment, $request->user());
 
             $receivable = $payment->receivable;
-
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'APPROVE_PAYMENT',
-                description: "Memverifikasi pembayaran untuk faktur #{$receivable->invoice_number} sebesar Rp " . number_format($payment->amount, 0, ',', '.'),
-                entity: $payment,
-            );
 
             return back()->with('success', 'Pembayaran disetujui. Plafon kredit distributor telah dipulihkan.');
         } catch (\Exception $e) {
@@ -157,21 +139,12 @@ class ReceivableController extends Controller
      */
     public function rejectPayment(Request $request, ReceivablePayment $payment): RedirectResponse
     {
-        if ($request->user()->role !== UserRole::SuperAdmin) {
-            abort(403);
-        }
+        Gate::authorize('approve-receivable-payments');
 
         $request->validate(['reason' => 'required|string|max:500']);
 
         try {
             $this->receivableService->rejectPayment($payment, $request->user(), $request->reason);
-
-            $this->auditService->log(
-                user: $request->user(),
-                actionType: 'REJECT_PAYMENT',
-                description: "Menolak pembayaran faktur #{$payment->receivable->invoice_number}: {$request->reason}",
-                entity: $payment,
-            );
 
             return back()->with('success', 'Pembayaran ditolak. Distributor akan diminta mengunggah ulang bukti transfer.');
         } catch (\Exception $e) {

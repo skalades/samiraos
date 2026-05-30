@@ -4,7 +4,11 @@ import { Head, useForm, router } from '@inertiajs/react';
 import { CreditCard, Plus, Trash2, Edit2, X, Check } from 'lucide-react';
 import Modal from '@/Components/Modal';
 
+import ConfirmDialog from '@/Components/ConfirmDialog';
+
 export default function BankAccountsIndex({ accounts }) {
+    const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: 'Konfirmasi', message: '', onConfirm: () => {}, danger: false });
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingAccount, setEditingAccount] = useState(null);
@@ -62,9 +66,15 @@ export default function BankAccountsIndex({ accounts }) {
     };
 
     const handleDelete = (id, bankName) => {
-        if (confirm(`Hapus rekening ${bankName}?`)) {
-            router.delete(route('bank-accounts.destroy', id));
-        }
+        setConfirmDialog({
+            isOpen: true,
+            title: 'Konfirmasi Hapus',
+            message: `Hapus rekening ${bankName}?`,
+            danger: true,
+            onConfirm: () => {
+                router.delete(route('bank-accounts.destroy', id));
+            }
+        });
     };
 
     return (
@@ -253,6 +263,15 @@ export default function BankAccountsIndex({ accounts }) {
                     </div>
                 </form>
             </Modal>
+        
+            <ConfirmDialog 
+                isOpen={confirmDialog.isOpen}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+                danger={confirmDialog.danger}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -2,6 +2,8 @@ import { Head } from '@inertiajs/react';
 import { useEffect } from 'react';
 import { Printer, Package } from 'lucide-react';
 
+import { formatIDR } from '@/lib/formatters';
+
 export default function PrintLabel({ order }) {
     
     useEffect(() => {
@@ -14,13 +16,6 @@ export default function PrintLabel({ order }) {
     }, []);
 
     // Format currency
-    const formatIDR = (value) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(value);
-    };
 
     return (
         <div className="min-h-screen bg-slate-100 flex items-start justify-center p-4 sm:p-8 font-mono print:bg-white print:p-0 print:m-0">

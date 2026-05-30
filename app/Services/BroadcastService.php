@@ -45,7 +45,7 @@ class BroadcastService
 
             $this->auditService->log(
                 user: $publisher,
-                actionType: 'announcement_published',
+                actionType: \App\Enums\AuditAction::CreateAnnouncement,
                 description: "Pengumuman '{$announcement->title}' dipublikasikan",
                 entity: $announcement,
                 newValues: $announcement->toArray()
@@ -54,50 +54,11 @@ class BroadcastService
             // Broadcast real-time websocket event via Laravel Reverb
             broadcast(new \App\Events\AnnouncementPublished($announcement))->toOthers();
 
-            // Kirim notifikasi database berdasarkan target role
+            // Kirim notifikasi asinkron via Queue
             $targetRole = TargetRole::from($data['target_role']);
-            if ($targetRole === TargetRole::All) {
-                $this->sendToAll($announcement);
-            } else {
-                $this->sendToRole($announcement, $targetRole);
-            }
+            \App\Jobs\SendAnnouncementNotifications::dispatch($announcement, $targetRole);
 
             return $announcement;
         });
-    }
-
-    /**
-     * Broadcast pengumuman ke semua user.
-     *
-     * @param  Announcement $announcement
-     * @return void
-     */
-    public function sendToAll(Announcement $announcement): void
-    {
-        User::where('is_active', true)
-            ->where('id', '!=', $announcement->published_by)
-            ->chunk(100, function ($users) use ($announcement) {
-                foreach ($users as $user) {
-                    $user->notify(new \App\Notifications\NewAnnouncement($announcement));
-                }
-            });
-    }
-
-    /**
-     * Broadcast pengumuman ke role tertentu.
-     *
-     * @param  Announcement $announcement
-     * @param  TargetRole   $role
-     * @return void
-     */
-    public function sendToRole(Announcement $announcement, TargetRole $role): void
-    {
-        User::where('is_active', true)
-            ->where('role', $role->value)
-            ->chunk(100, function ($users) use ($announcement) {
-                foreach ($users as $user) {
-                    $user->notify(new \App\Notifications\NewAnnouncement($announcement));
-                }
-            });
     }
 }

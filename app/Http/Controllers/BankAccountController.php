@@ -34,7 +34,7 @@ class BankAccountController extends Controller
 
         $this->auditService->log(
             user: $request->user(),
-            actionType: 'CREATE_BANK_ACCOUNT',
+            actionType: \App\Enums\AuditAction::CreateBankAccount,
             description: "Menambahkan rekening bank baru: {$account->bank_name} - {$account->account_number}",
             entity: $account
         );
@@ -56,7 +56,7 @@ class BankAccountController extends Controller
 
         $this->auditService->log(
             user: $request->user(),
-            actionType: 'UPDATE_BANK_ACCOUNT',
+            actionType: \App\Enums\AuditAction::UpdateBankAccount,
             description: "Memperbarui rekening bank: {$bankAccount->bank_name}",
             entity: $bankAccount,
             oldValues: $oldValues,
@@ -73,7 +73,7 @@ class BankAccountController extends Controller
 
         $this->auditService->log(
             user: $request->user(),
-            actionType: 'DELETE_BANK_ACCOUNT',
+            actionType: \App\Enums\AuditAction::DeleteBankAccount,
             description: "Menghapus rekening bank: {$bankAccount->bank_name}",
             entity: $bankAccount,
             oldValues: $oldValues
