@@ -23,13 +23,13 @@ class TerritoryController extends Controller
      */
     public function index(Request $request): Response
     {
-        $territories = Territory::with(['networkBindings' => function ($q) {
-            $q->where('role', 'distributor');
-        }, 'networkBindings.user'])
+        $territories = Territory::with(['networkBindings.user'])
             ->where('is_active', true)
             ->get()
             ->map(function (Territory $territory) {
-                $distributor = $territory->networkBindings->first();
+                $distributorBinding = $territory->networkBindings->where('role', 'distributor')->first();
+                $agenBindings = $territory->networkBindings->where('role', 'agen')->values();
+
                 return [
                     'id' => $territory->id,
                     'name' => $territory->name,
@@ -38,7 +38,8 @@ class TerritoryController extends Controller
                     'longitude' => $territory->longitude,
                     'max_stock_capacity' => $territory->max_stock_capacity,
                     'is_active' => $territory->is_active,
-                    'distributor' => $distributor?->user?->only('id', 'name', 'phone'),
+                    'distributor' => $distributorBinding?->user?->only('id', 'name', 'phone', 'email', 'address'),
+                    'agents' => $agenBindings->map(fn($binding) => $binding->user?->only('id', 'name', 'phone', 'email', 'address'))->filter(),
                 ];
             });
 

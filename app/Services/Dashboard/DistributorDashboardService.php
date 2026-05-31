@@ -33,7 +33,7 @@ class DistributorDashboardService implements DashboardServiceInterface
             $inventories = $user->inventory;
         }
 
-        $lowStockProducts = $inventories->filter(fn(Inventory $inv) => $inv->isLowStock());
+        $lowStockProducts = $inventories->filter(fn(Inventory $inv) => $inv->isLowStock())->values();
 
         $creditInfo = $user->getCreditInfo();
 

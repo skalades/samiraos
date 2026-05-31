@@ -71,7 +71,7 @@ class Announcement extends Model
     public function scopeForRole(Builder $query, string $role): Builder
     {
         return $query->where(function (Builder $q) use ($role) {
-            $q->where('target_role', TargetRole::ALL->value)
+            $q->where('target_role', TargetRole::All->value)
                 ->orWhere('target_role', $role);
         });
     }

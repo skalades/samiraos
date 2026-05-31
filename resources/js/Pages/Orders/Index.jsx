@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import TransactionTabs from '@/Components/TransactionTabs';
 import { useState } from 'react';
 import { formatIDR } from '@/lib/formatters';
 
@@ -48,10 +49,10 @@ export default function OrdersIndex({ orders, filters }) {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight text-slate-800">
-                            Daftar Purchase Order (PO)
+                            Transaksi
                         </h2>
                         <p className="text-sm text-slate-500">
-                            Kelola pesanan barang antar jaringan distribusi.
+                            Kelola pesanan barang dan piutang antar jaringan distribusi.
                         </p>
                     </div>
                     <div>
@@ -70,8 +71,10 @@ export default function OrdersIndex({ orders, filters }) {
         >
             <Head title="Purchase Orders" />
 
-            <div className="py-8 bg-slate-50 min-h-[calc(100vh-6.5rem)]">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
+            <div className="p-8">
+                <div className="mx-auto max-w-7xl space-y-6">
+
+                    <TransactionTabs />
 
                     {/* SEARCH & FILTERS BAR */}
                     <div className="glass-card rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">

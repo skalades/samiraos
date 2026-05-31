@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
+import TransactionTabs from '@/Components/TransactionTabs';
 import { useState } from 'react';
 import { formatIDR } from '@/lib/formatters';
 import { 
@@ -35,18 +36,20 @@ export default function ReceivablesIndex({ receivables, summary, filters }) {
             header={
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight text-slate-800">
-                        Piutang & Tagihan Pusat
+                        Transaksi
                     </h2>
                     <p className="text-sm text-slate-500">
-                        Pantau status cicilan tempo distributor regional.
+                        Kelola pesanan barang dan piutang antar jaringan distribusi.
                     </p>
                 </div>
             }
         >
             <Head title="Piutang Pusat" />
 
-            <div className="py-8 bg-slate-50 min-h-[calc(100vh-6.5rem)]">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
+            <div className="p-8">
+                <div className="mx-auto max-w-7xl space-y-6">
+
+                    <TransactionTabs />
 
                     {/* PIUTANG OVERVIEW WIDGETS */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

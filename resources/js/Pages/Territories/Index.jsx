@@ -7,14 +7,19 @@ import {
     Save, 
     X,
     TrendingUp,
-    ShieldAlert
+    ShieldAlert,
+    Users
 } from 'lucide-react';
 import L from 'leaflet';
+import Modal from '@/Components/Modal';
 
 export default function TerritoriesIndex({ territories }) {
     const mapRef = useRef(null);
     const mapInstance = useRef(null);
     const [selectedTerritory, setSelectedTerritory] = useState(null);
+    const [selectedAgents, setSelectedAgents] = useState([]);
+    const [selectedTerritoryName, setSelectedTerritoryName] = useState('');
+    const [isAgentsModalOpen, setIsAgentsModalOpen] = useState(false);
 
     const { data, setData, put, processing, errors, reset } = useForm({
         name: '',
@@ -90,6 +95,18 @@ export default function TerritoriesIndex({ territories }) {
         reset();
     };
 
+    const handleOpenAgentsModal = (territoryName, agents) => {
+        setSelectedTerritoryName(territoryName);
+        setSelectedAgents(agents);
+        setIsAgentsModalOpen(true);
+    };
+
+    const handleCloseAgentsModal = () => {
+        setIsAgentsModalOpen(false);
+        setSelectedAgents([]);
+        setSelectedTerritoryName('');
+    };
+
     const submit = (e) => {
         e.preventDefault();
         put(route('territories.update', selectedTerritory.id), {
@@ -135,10 +152,10 @@ export default function TerritoriesIndex({ territories }) {
                                 <thead>
                                     <tr className="border-b text-slate-400 font-bold">
                                         <th className="py-3">Nama Wilayah</th>
-                                        <th className="py-3">Distributor Penanggung Jawab</th>
-                                        <th className="py-3">No. Kontak</th>
+                                        <th className="py-3">Info Distributor</th>
                                         <th className="py-3 text-right">Kapasitas Maksimal</th>
-                                        <th className="py-3">Koordinat Lat / Long</th>
+                                        <th className="py-3">Koordinat Lat/Long</th>
+                                        <th className="py-3 text-center">Jaringan Agen</th>
                                         <th className="py-3 text-center">Tindakan</th>
                                     </tr>
                                 </thead>
@@ -149,8 +166,15 @@ export default function TerritoriesIndex({ territories }) {
                                                 <MapPin className="w-4 h-4 text-indigo-500" />
                                                 {t.name}
                                             </td>
-                                            <td className="py-4 font-semibold text-slate-700">{t.distributor?.name || '-'}</td>
-                                            <td className="py-4 text-slate-500">{t.distributor?.phone || '-'}</td>
+                                            <td className="py-4">
+                                                {t.distributor ? (
+                                                    <div>
+                                                        <div className="font-bold text-slate-800">{t.distributor.name}</div>
+                                                        <div className="text-[10px] text-slate-500 font-semibold">{t.distributor.email} • {t.distributor.phone}</div>
+                                                        <div className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{t.distributor.address}</div>
+                                                    </div>
+                                                ) : '-'}
+                                            </td>
                                             <td className="py-4 text-right font-bold text-slate-800">
                                                 {t.max_stock_capacity.toLocaleString('id-ID')} pcs
                                             </td>
@@ -158,12 +182,25 @@ export default function TerritoriesIndex({ territories }) {
                                                 {t.latitude && t.longitude ? `${t.latitude}, ${t.longitude}` : 'Belum Diatur'}
                                             </td>
                                             <td className="py-4 text-center">
+                                                {t.agents && t.agents.length > 0 ? (
+                                                    <button
+                                                        onClick={() => handleOpenAgentsModal(t.name, t.agents)}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg border border-emerald-100 transition-colors mx-auto font-bold text-[11px]"
+                                                    >
+                                                        <Users className="w-3.5 h-3.5" />
+                                                        {t.agents.length} Agen
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-[10px] text-slate-400 font-semibold bg-slate-100 px-2 py-1 rounded">Tidak ada agen</span>
+                                                )}
+                                            </td>
+                                            <td className="py-4 text-center">
                                                 <button
                                                     onClick={() => handleOpenEditModal(t)}
-                                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white rounded-lg border border-indigo-100 transition-colors mx-auto"
+                                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white rounded-lg border border-indigo-100 transition-colors mx-auto font-bold text-[11px]"
                                                 >
                                                     <Edit className="w-3.5 h-3.5" />
-                                                    Edit Wilayah
+                                                    Edit
                                                 </button>
                                             </td>
                                         </tr>
@@ -264,6 +301,57 @@ export default function TerritoriesIndex({ territories }) {
                     </div>
                 </div>
             )}
+
+            {/* AGENTS LIST MODAL */}
+            <Modal show={isAgentsModalOpen} onClose={handleCloseAgentsModal} maxWidth="2xl">
+                <div className="bg-white rounded-3xl shadow-xl w-full overflow-hidden">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <div>
+                            <h3 className="font-extrabold text-slate-800 text-base">Jaringan Agen: {selectedTerritoryName}</h3>
+                            <p className="text-xs text-slate-500">Daftar agen yang terdaftar di bawah wilayah ini.</p>
+                        </div>
+                        <button
+                            onClick={handleCloseAgentsModal}
+                            className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="p-6 max-h-[60vh] overflow-y-auto">
+                        {selectedAgents.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {selectedAgents.map(agent => (
+                                    <div key={agent.id} className="p-4 border border-slate-100 bg-white rounded-2xl flex items-start gap-3 shadow-sm">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 font-bold">
+                                            {agent.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-slate-800 text-sm">{agent.name}</div>
+                                            <div className="text-[11px] text-slate-500 font-semibold mt-0.5">{agent.email}</div>
+                                            <div className="text-[11px] text-slate-500">{agent.phone}</div>
+                                            <div className="text-[10px] text-slate-400 mt-1 line-clamp-2">{agent.address}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-12 text-center text-slate-400 font-semibold">
+                                Belum ada agen yang terdaftar di wilayah ini.
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                        <button
+                            onClick={handleCloseAgentsModal}
+                            className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-colors text-xs"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
         </AuthenticatedLayout>
     );
