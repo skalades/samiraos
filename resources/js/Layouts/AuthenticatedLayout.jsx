@@ -7,6 +7,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
     const permissions = usePage().props.auth.permissions || {};
     const [toasts, setToasts] = useState([]);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     useEffect(() => {
         if (!window.Echo) return;
@@ -85,14 +86,22 @@ export default function AuthenticatedLayout({ header, children }) {
     }, [user]);
 
     return (
-        <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+        <div className="flex h-screen bg-slate-50 overflow-hidden font-sans relative">
+            {/* Sidebar overlay for mobile */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-slate-900/50 z-30 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <Sidebar />
+            <Sidebar isOpen={isSidebarOpen} />
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col overflow-hidden w-full">
+            <div className="flex-1 flex flex-col overflow-hidden w-full transition-all duration-300">
                 {/* Topbar */}
-                <TopHeader header={header} />
+                <TopHeader header={header} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
                 {/* Main Scrollable Content */}
                 <main className="flex-1 overflow-y-auto">

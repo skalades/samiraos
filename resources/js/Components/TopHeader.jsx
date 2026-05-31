@@ -1,16 +1,24 @@
-import { Bell, Settings, User } from 'lucide-react';
+import { Bell, Settings, User, Menu } from 'lucide-react';
 import { Link, usePage } from '@inertiajs/react';
 import Dropdown from '@/Components/Dropdown';
 
-export default function TopHeader({ header }) {
+export default function TopHeader({ header, toggleSidebar }) {
     const { auth } = usePage().props;
     const user = auth.user;
 
     return (
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
             {/* Left side: Page Title (from header prop) */}
-            <div className="flex-1 min-w-0">
-                {header}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+                <button 
+                    onClick={toggleSidebar} 
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
+                <div className="flex-1 min-w-0">
+                    {header}
+                </div>
             </div>
 
             {/* Right side: Tools & Profile */}
